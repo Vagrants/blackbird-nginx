@@ -12,7 +12,7 @@ setup(
     description=(
         'get nginx stats by using stub_status.'
     ),
-    author='ARASHI, Jumpei',
-    author_email='jumpei.arashi@arashike.com',
+    author='makocchi',
+    author_email='makocchi@gmail.com',
     url='https://github.com/Vagrants/blackbird-nginx',
 )

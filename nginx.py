@@ -18,17 +18,29 @@ class ConcreteJob(base.JobBase):
     def __init__(self, options, queue=None, logger=None):
         super(ConcreteJob, self).__init__(options, queue, logger)
 
-        self.hostname = options['hostname']
+    def _enqueue(self, item):
+        self.queue.put(item, block=False)
+        self.logger.debug(
+            'Inserted to queue nginx.stat[{key}]:{value}'
+            ''.format(key=item.key, value=item.value)
+        )
 
     def looped_method(self):
+
+        # get information from stub_status
+        self._get_stub()
+
+        if 'response_check_uri' in self.options:
+            self._get_response_time()
+
+    def _get_stub(self):
         """
         notes: cps = connection per seconds
         """
-        #if options['https']:
-        #    method = 'https://'
-        #else:
-        #    medhod = 'http://'
-        method = 'http://'
+        if self.options['ssl']:
+            method = 'https://'
+        else:
+            method = 'http://'
         url = (
             '{method}{host}:{port}/{uri}'
             ''.format(
@@ -71,15 +83,52 @@ class ConcreteJob(base.JobBase):
                 item = NginxItem(
                     key=key,
                     value=value,
-                    host=self.hostname
+                    host=self.options['hostname']
                 )
-                
-                self.queue.put(item, block=False)
-                self.logger.debug(
-                    ('INserted to queue nginx.{key}:{value}'
-                     ''.format(key=key, value=value)
-                     )
-                )
+                self._enqueue(item)
+
+    def _get_response_time(self):
+        if self.options['response_check_ssl']:
+            method = 'https://'
+        else:
+            method = 'http://'
+
+        url = (
+            '{method}{host}:{port}{uri}'
+            ''.format(
+                method=method,
+                host=self.options['response_check_host'],
+                port=self.options['response_check_port'],
+                uri=self.options['response_check_uri']
+            )
+        )
+
+        headers = {
+            'Host': self.options['response_check_vhost'],
+            'User-Agent': self.options['response_check_uagent'],
+        }
+
+        with base.Timer() as timer:
+            response = requests.get(url, headers=headers)
+
+        if response.status_code == 200:
+            time = timer.sec
+        else:
+            time = 0
+
+        item = NginxItem(
+            key='response_check,time',
+            value=time,
+            host=self.options['hostname']
+        )
+        self._enqueue(item)
+
+        item = NginxItem(
+            key='response_check,status_code',
+            value=response.status_code,
+            host=self.options['hostname']
+        )
+        self._enqueue(item)
 
 
 class NginxItem(base.ItemBase):
@@ -98,7 +147,7 @@ class NginxItem(base.ItemBase):
         return self._data
 
     def _generate(self):
-        self._data['key'] = 'nginx.{0}'.format(self.key)
+        self._data['key'] = 'nginx.stat[{0}]'.format(self.key)
         self._data['value'] = self.value
         self._data['host'] = self.host
         self._data['clock'] = self.clock
@@ -124,6 +173,12 @@ class Validator(base.ValidatorBase):
             "status_uri = string(default='nginx_status')",
             "user = string(default=None)",
             "password = string(default=None)",
+            "ssl = boolean(default=False)",
+            "response_check_port = integer(0, 65535, default=80)",
+            "response_check_host = string(default='127.0.0.1')",
+            "response_check_vhost = string(default='localhost')",
+            "response_check_uagent = string(default='blackbird response check')",
+            "response_check_ssl = boolean(default=False)",
             "hostname = string(default={0})".format(self.gethostname()),
         )
         return self.__spec
