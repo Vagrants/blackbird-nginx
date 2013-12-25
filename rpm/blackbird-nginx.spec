@@ -1,7 +1,7 @@
 %define _unpackaged_files_terminate_build 0
 %define name blackbird-nginx
-%define version 0.1.0
-%define unmangled_version 0.1.0
+%define version 0.1.1
+%define unmangled_version 0.1.1
 %define release 1
 
 %define blackbird_conf_dir /etc/blackbird/conf.d
@@ -47,5 +47,8 @@ rm -rf $RPM_BUILD_ROOT
 %defattr(-,root,root)
 
 %changelog
+* Wed Nov 25 2013 makochi <makocchi@gmail.com> - 0.1.1
+- update to 0.1.1
+
 * Tue Nov 24 2013 makochi <makocchi@gmail.com> - 0.1.0
 - first package
