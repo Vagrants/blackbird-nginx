@@ -8,7 +8,7 @@ except ImportError:
 
 setup(
     name='blackbird-nginx',
-    version='0.1.1',
+    version='0.1.2',
     description=(
         'get nginx stats by using stub_status.'
     ),
