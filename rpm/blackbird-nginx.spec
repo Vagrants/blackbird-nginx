@@ -19,6 +19,7 @@ BuildArch: noarch
 Vendor: makocchi <makocchi@gmail.com>
 Packager: makocchi <makocchi@gmail.com>
 Requires:  blackbird
+Requires:  python-requests
 Url: https://github.com/Vagrants/blackbird-nginx
 BuildRequires:  python-devel
 
