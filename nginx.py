@@ -80,6 +80,13 @@ class ConcreteJob(base.JobBase):
         )
         self._enqueue(item)
 
+        item = NginxItem(
+            key='blackbird.nginx.version',
+            value=__VERSION__,
+            host=self.options['hostname']
+        )
+        self._enqueue(item)
+
     def _get_version(self):
         """
         detect nginx version
@@ -89,14 +96,18 @@ class ConcreteJob(base.JobBase):
         """
 
         version = 'Unknown'
-        matcher = re.compile('nginx version: nginx/(.+)')
-        nginx = subprocess.Popen([self.options['path'], '-v'],
-                                 stderr=subprocess.PIPE)
+        try:
+            output = subprocess.Popen([self.options['path'], '-v'],
+                                     stderr=subprocess.PIPE).communicate()[1]
+            match = re.match(r"nginx version: nginx/(\S+)", output)
+            if match:
+                version = match.group(1)
 
-        for line in nginx.stderr.readlines():
-            result = matcher.match(line)
-            if result:
-                version = result.group(1)
+        except OSError:
+            self.logger.debug(
+                'can not exec "{0} -v", failed to get nginx version'
+                ''.format(self.options['path'])
+            )
 
         item = NginxItem(
             key='nginx.version',

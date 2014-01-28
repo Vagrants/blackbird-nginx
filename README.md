@@ -21,6 +21,7 @@ config file
 | response_check_vhost    | localhost      | string              | nginx vhost for L7 response check   |
 | response_check_uagent   | blackbird response check | string    | user agent for L7 response check    |
 | response_check_ssl      | False          | boolean             | use ssl for L7 response check       |
+| path                    | /usr/sbin/nginx| string              | "nginx -v" for version detect       |
 
 
 Please see the "nginx.cfg"

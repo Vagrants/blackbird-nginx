@@ -2,7 +2,7 @@
 %define name blackbird-nginx
 %define version 0.1.4
 %define unmangled_version 0.1.4
-%define release 1
+%define release 2
 
 %define blackbird_conf_dir /etc/blackbird/conf.d
 
@@ -48,17 +48,21 @@ rm -rf $RPM_BUILD_ROOT
 %defattr(-,root,root)
 
 %changelog
-* Tue Jan 28 2014 makochi <makocchi@gmail.com> - 0.1.4
+* Tue Jan 28 2014 makochi <makocchi@gmail.com> - 0.1.4-2
+- fix subprocess problem
+- add plugin version to send item
+
+* Tue Jan 28 2014 makochi <makocchi@gmail.com> - 0.1.4-1
 - update to 0.1.4
 
-* Thu Jan  9 2014 makochi <makocchi@gmail.com> - 0.1.3
+* Thu Jan  9 2014 makochi <makocchi@gmail.com> - 0.1.3-1
 - update to 0.1.3
 
-* Mon Jan  6 2014 makochi <makocchi@gmail.com> - 0.1.2
+* Mon Jan  6 2014 makochi <makocchi@gmail.com> - 0.1.2-1
 - update to 0.1.2
 
-* Wed Nov 25 2013 makochi <makocchi@gmail.com> - 0.1.1
+* Wed Nov 25 2013 makochi <makocchi@gmail.com> - 0.1.1-1
 - update to 0.1.1
 
-* Tue Nov 24 2013 makochi <makocchi@gmail.com> - 0.1.0
+* Tue Nov 24 2013 makochi <makocchi@gmail.com> - 0.1.0-1
 - first package
