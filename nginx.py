@@ -1,10 +1,12 @@
 #!/usr/bin/env python
-# -*- encodig: utf-8 -*-
-"""
-Get the nginx's "stub_status"
-"""
+# -*- encoding: utf-8 -*-
+# pylint: disable=C0111,C0301,R0903
+
+__VERSION__ = '0.1.4'
 
 import requests
+import subprocess
+import re
 
 from blackbird.plugins import base
 
@@ -23,6 +25,12 @@ class ConcreteJob(base.JobBase):
         """
         main loop
         """
+
+        # ping item
+        self._ping()
+
+        # detect nginx version
+        self._get_version()
 
         # get information from stub_status
         self._get_stub()
@@ -59,6 +67,43 @@ class ConcreteJob(base.JobBase):
                 ''.format(url=url, status=response.status_code)
             )
             return []
+
+    def _ping(self):
+        """
+        send ping item
+        """
+
+        item = NginxItem(
+            key='blackbird.nginx.ping',
+            value=1,
+            host=self.options['hostname']
+        )
+        self._enqueue(item)
+
+    def _get_version(self):
+        """
+        detect nginx version
+
+        $ nginx -v 
+        nginx version: nginx/N.N.N
+        """
+
+        version = 'Unknown'
+        matcher = re.compile('nginx version: nginx/(.+)')
+        nginx = subprocess.Popen([self.options['path'], '-v'],
+                                 stderr=subprocess.PIPE)
+
+        for line in nginx.stderr.readlines():
+            result = matcher.match(line)
+            if result:
+                version = result.group(1)
+
+        item = NginxItem(
+            key='nginx.version',
+            value=version,
+            host=self.options['hostname']
+        )
+        self._enqueue(item)
 
     def _get_stub(self):
         """
@@ -115,7 +160,7 @@ class ConcreteJob(base.JobBase):
             stats[key] = int(value)
 
         for key, value in stats.items():
-            item = NginxItem(
+            item = NginxStatItem(
                 key=key,
                 value=value,
                 host=self.options['hostname']
@@ -165,8 +210,8 @@ class ConcreteJob(base.JobBase):
         with base.Timer() as timer:
             try:
                 response = requests.get(url,
-                                        timeout=self.options['response_check_timeout'],
-                                        headers=headers)
+                                timeout=self.options['response_check_timeout'],
+                                headers=headers)
             except requests.exceptions.RequestException:
                 item = NginxGroupItem(
                     key='available',
@@ -194,14 +239,14 @@ class ConcreteJob(base.JobBase):
         )
         self._enqueue(item)
 
-        item = NginxItem(
+        item = NginxStatItem(
             key='response_check,time',
             value=time,
             host=self.options['hostname']
         )
         self._enqueue(item)
 
-        item = NginxItem(
+        item = NginxStatItem(
             key='response_check,status_code',
             value=response.status_code,
             host=self.options['hostname']
@@ -225,11 +270,32 @@ class NginxItem(base.ItemBase):
         return self._data
 
     def _generate(self):
-        self._data['key'] = 'nginx.stat[{0}]'.format(self.key)
+        self._data['key'] = self.key
         self._data['value'] = self.value
         self._data['host'] = self.host
         self._data['clock'] = self.clock
 
+
+class NginxStatItem(base.ItemBase):
+    """
+    Enqued item.
+    """
+
+    def __init__(self, key, value, host):
+        super(NginxStatItem, self).__init__(key, value, host)
+
+        self._data = {}
+        self._generate()
+
+    @property
+    def data(self):
+        return self._data
+
+    def _generate(self):
+        self._data['key'] = 'nginx.stat[{0}]'.format(self.key)
+        self._data['value'] = self.value
+        self._data['host'] = self.host
+        self._data['clock'] = self.clock
 
 class NginxGroupItem(base.ItemBase):
     """
@@ -276,6 +342,7 @@ class Validator(base.ValidatorBase):
             "user = string(default=None)",
             "password = string(default=None)",
             "ssl = boolean(default=False)",
+            "path = string(default='/usr/sbin/nginx')",
             "response_check_host = string(default='127.0.0.1')",
             "response_check_port = integer(1, 65535, default=80)",
             "response_check_timeout = integer(0, 600, default=3)",
