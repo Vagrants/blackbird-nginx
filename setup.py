@@ -13,7 +13,7 @@ def read(fname):
 
 setup(
     name='blackbird-nginx',
-    version='0.1.3',
+    version='0.1.4',
     description=(
         'get nginx stats by using stub_status.'
     ),

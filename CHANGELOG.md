@@ -1,5 +1,10 @@
 # CHANGELOG for blackbird-nginx
 
+## 0.1.4:
+
+* add nginx version item
+* add ping status
+
 ## 0.1.3:
 
 * revise port validation
