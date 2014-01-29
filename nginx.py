@@ -38,11 +38,17 @@ class ConcreteJob(base.JobBase):
         # get response time and availability
         self._get_response_time()
 
-    def _enqueue(self, item):
+    def _enqueue(self, key, value):
+
+        item = NginxItem(
+            key=key,
+            value=value,
+            host=self.options['hostname']
+        )
         self.queue.put(item, block=False)
         self.logger.debug(
             'Inserted to queue {key}:{value}'
-            ''.format(key=item.key, value=item.value)
+            ''.format(key=key, value=value)
         )
 
     def _request(self, url, timeout):
@@ -73,19 +79,8 @@ class ConcreteJob(base.JobBase):
         send ping item
         """
 
-        item = NginxItem(
-            key='blackbird.nginx.ping',
-            value=1,
-            host=self.options['hostname']
-        )
-        self._enqueue(item)
-
-        item = NginxItem(
-            key='blackbird.nginx.version',
-            value=__VERSION__,
-            host=self.options['hostname']
-        )
-        self._enqueue(item)
+        self._enqueue('blackbird.nginx.ping', 1)
+        self._enqueue('blackbird.nginx.version', __VERSION__)
 
     def _get_version(self):
         """
@@ -95,13 +90,13 @@ class ConcreteJob(base.JobBase):
         nginx version: nginx/N.N.N
         """
 
-        version = 'Unknown'
+        nginx_version = 'Unknown'
         try:
             output = subprocess.Popen([self.options['path'], '-v'],
                                      stderr=subprocess.PIPE).communicate()[1]
             match = re.match(r"nginx version: nginx/(\S+)", output)
             if match:
-                version = match.group(1)
+                nginx_version = match.group(1)
 
         except OSError:
             self.logger.debug(
@@ -109,12 +104,7 @@ class ConcreteJob(base.JobBase):
                 ''.format(self.options['path'])
             )
 
-        item = NginxItem(
-            key='nginx.version',
-            value=version,
-            host=self.options['hostname']
-        )
-        self._enqueue(item)
+        self._enqueue('nginx.version', nginx_version)
 
     def _get_stub(self):
         """
@@ -171,32 +161,17 @@ class ConcreteJob(base.JobBase):
             stats[key] = int(value)
 
         for key, value in stats.items():
-            item = NginxStatItem(
-                key=key,
-                value=value,
-                host=self.options['hostname']
-            )
-            self._enqueue(item)
+            self._enqueue('nginx.stat[{0}]'.format(key), value)
 
     def _get_response_time(self):
 
         # do not monitoring
         if not 'response_check_uri' in self.options:
-            item = NginxGroupItem(
-                key='amount',
-                value=0,
-                host=self.options['hostname']
-            )
-            self._enqueue(item)
+            self._enqueue('nginx.group.amount', 0)
             return
 
         # do monitoring
-        item = NginxGroupItem(
-            key='amount',
-            value=1,
-            host=self.options['hostname']
-        )
-        self._enqueue(item)
+        self._enqueue('nginx.group.amount', 1)
 
         if self.options['response_check_ssl']:
             method = 'https://'
@@ -224,12 +199,7 @@ class ConcreteJob(base.JobBase):
                                 timeout=self.options['response_check_timeout'],
                                 headers=headers)
             except requests.exceptions.RequestException:
-                item = NginxGroupItem(
-                    key='available',
-                    value=0,
-                    host=self.options['hostname']
-                )
-                self._enqueue(item)
+                self._enqueue('nginx.group.available', 0)
                 return
 
         if response.status_code == 200:
@@ -243,26 +213,9 @@ class ConcreteJob(base.JobBase):
             time = 0
             available = 0
 
-        item = NginxGroupItem(
-            key='available',
-            value=available,
-            host=self.options['hostname']
-        )
-        self._enqueue(item)
-
-        item = NginxStatItem(
-            key='response_check,time',
-            value=time,
-            host=self.options['hostname']
-        )
-        self._enqueue(item)
-
-        item = NginxStatItem(
-            key='response_check,status_code',
-            value=response.status_code,
-            host=self.options['hostname']
-        )
-        self._enqueue(item)
+        self._enqueue('nginx.group.available', available)
+        self._enqueue('nginx.stat[response_check,time]', time)
+        self._enqueue('nginx.stat[response_check,status_code]', response.status_code)
 
 
 class NginxItem(base.ItemBase):
@@ -282,49 +235,6 @@ class NginxItem(base.ItemBase):
 
     def _generate(self):
         self._data['key'] = self.key
-        self._data['value'] = self.value
-        self._data['host'] = self.host
-        self._data['clock'] = self.clock
-
-
-class NginxStatItem(base.ItemBase):
-    """
-    Enqued item.
-    """
-
-    def __init__(self, key, value, host):
-        super(NginxStatItem, self).__init__(key, value, host)
-
-        self._data = {}
-        self._generate()
-
-    @property
-    def data(self):
-        return self._data
-
-    def _generate(self):
-        self._data['key'] = 'nginx.stat[{0}]'.format(self.key)
-        self._data['value'] = self.value
-        self._data['host'] = self.host
-        self._data['clock'] = self.clock
-
-class NginxGroupItem(base.ItemBase):
-    """
-    Enqued item.
-    """
-
-    def __init__(self, key, value, host):
-        super(NginxGroupItem, self).__init__(key, value, host)
-
-        self._data = {}
-        self._generate()
-
-    @property
-    def data(self):
-        return self._data
-
-    def _generate(self):
-        self._data['key'] = 'nginx.group.{0}'.format(self.key)
         self._data['value'] = self.value
         self._data['host'] = self.host
         self._data['clock'] = self.clock
