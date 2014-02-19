@@ -30,5 +30,6 @@ setup(
         ('/opt/blackbird/plugins', ['nginx.py']),
         ('/etc/blackbird/conf.d', ['nginx.cfg'])
     ],
+    test_suite='tests',
 )
 
