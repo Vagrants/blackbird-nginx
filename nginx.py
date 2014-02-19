@@ -86,14 +86,14 @@ class ConcreteJob(base.JobBase):
         """
         detect nginx version
 
-        $ nginx -v 
+        $ nginx -v
         nginx version: nginx/N.N.N
         """
 
         nginx_version = 'Unknown'
         try:
             output = subprocess.Popen([self.options['path'], '-v'],
-                                     stderr=subprocess.PIPE).communicate()[1]
+                                      stderr=subprocess.PIPE).communicate()[1]
             match = re.match(r"nginx version: nginx/(\S+)", output)
             if match:
                 nginx_version = match.group(1)
@@ -196,8 +196,10 @@ class ConcreteJob(base.JobBase):
         with base.Timer() as timer:
             try:
                 response = requests.get(url,
-                                timeout=self.options['response_check_timeout'],
-                                headers=headers)
+                                        timeout=self.options[
+                                            'response_check_timeout'
+                                        ],
+                                        headers=headers)
             except requests.exceptions.RequestException:
                 self._enqueue('nginx.group.available', 0)
                 return
@@ -215,7 +217,8 @@ class ConcreteJob(base.JobBase):
 
         self._enqueue('nginx.group.available', available)
         self._enqueue('nginx.stat[response_check,time]', time)
-        self._enqueue('nginx.stat[response_check,status_code]', response.status_code)
+        self._enqueue('nginx.stat[response_check,status_code]',
+                      response.status_code)
 
 
 class NginxItem(base.ItemBase):
@@ -256,20 +259,22 @@ class Validator(base.ValidatorBase):
         """
         self.__spec = (
             "[{0}]".format(__name__),
-            "host = string(default='127.0.0.1')",
-            "port = integer(1, 65535, default=80)",
-            "timeout = integer(0, 600, default=3)",
-            "status_uri = string(default='/nginx_status')",
-            "user = string(default=None)",
-            "password = string(default=None)",
-            "ssl = boolean(default=False)",
-            "path = string(default='/usr/sbin/nginx')",
-            "response_check_host = string(default='127.0.0.1')",
-            "response_check_port = integer(1, 65535, default=80)",
-            "response_check_timeout = integer(0, 600, default=3)",
-            "response_check_vhost = string(default='localhost')",
-            "response_check_uagent = string(default='blackbird response check')",
-            "response_check_ssl = boolean(default=False)",
-            "hostname = string(default={0})".format(self.detect_hostname()),
+            "host=string(default='127.0.0.1')",
+            "port=integer(1, 65535, default=80)",
+            "timeout=integer(0, 600, default=3)",
+            "status_uri=string(default='/nginx_status')",
+            "user=string(default=None)",
+            "password=string(default=None)",
+            "ssl=boolean(default=False)",
+            "path=string(default='/usr/sbin/nginx')",
+            "response_check_host=string(default='127.0.0.1')",
+            "response_check_port=integer(1, 65535, default=80)",
+            "response_check_timeout=integer(0, 600, default=3)",
+            "response_check_vhost=string(default='localhost')",
+            "response_check_uagent=string(
+                default='blackbird response check'
+            )",
+            "response_check_ssl=boolean(default=False)",
+            "hostname=string(default={0})".format(self.detect_hostname()),
         )
         return self.__spec
