@@ -1,6 +1,8 @@
 blackbird-nginx
 ===============
 
+[![Build Status](https://travis-ci.org/Vagrants/blackbird-nginx.png?branch=development)](https://travis-ci.org/Vagrants/blackbird-nginx)
+
 Get status by using "GET /stub_status"
 
 config file
