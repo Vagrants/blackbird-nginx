@@ -271,9 +271,7 @@ class Validator(base.ValidatorBase):
             "response_check_port=integer(1, 65535, default=80)",
             "response_check_timeout=integer(0, 600, default=3)",
             "response_check_vhost=string(default='localhost')",
-            "response_check_uagent=string(
-                default='blackbird response check'
-            )",
+            "response_check_uagent=string(default='blackbird response check')",
             "response_check_ssl=boolean(default=False)",
             "hostname=string(default={0})".format(self.detect_hostname()),
         )
